@@ -123,6 +123,7 @@ class Ufo(pygame.sprite.Sprite):
         self.is_jumping = False
         self.mask = pygame.mask.from_surface(self.image)  # Маска для кубика
         self.original_image = self.image
+
     def update(self):
         global game_over
         global flag1
@@ -238,6 +239,19 @@ class CubePortal(pygame.sprite.Sprite):
         self.rect.x -= self.vx
 
 
+class UfoPortal(pygame.sprite.Sprite):
+    def __init__(self, pos_x, pos_y):
+        super().__init__(ufo_portals, all_sprites)
+        self.image = pygame.transform.scale(load_image('UFOPortalLabelled.png'), (75, 150))
+        self.rect = self.image.get_rect().move(
+            50 * pos_x, 50 * pos_y - 100)
+        self.vx = 5
+        self.mask = pygame.mask.from_surface(self.image)
+
+    def update(self):
+        self.rect.x -= self.vx
+
+
 class Platform(pygame.sprite.Sprite):
     def __init__(self, pos_x, pos_y):
         super().__init__(platforms, all_sprites)
@@ -265,6 +279,8 @@ def generate_level(level):
                 Sphere(x, y)
             elif level[y][x] == '0':
                 CubePortal(x, y)
+            elif level[y][x] == '1':
+                UfoPortal(x, y)
     # вернем игрока, а также размер поля в клетках
     return x, y
 
@@ -287,7 +303,7 @@ def start_screen():
                 terminate()
             if event.type == pygame.MOUSEBUTTONDOWN and not flag:
                 Backgrounds()
-                player = Ufo(200, HEIGHT - 95)
+                player = Cube(200, HEIGHT - 100)
                 flag = True
                 generate_level(load_level('level1.txt'))
                 # начинаем игру
@@ -300,6 +316,14 @@ def start_screen():
             if player is not None and pygame.sprite.spritecollideany(player, cube_portals,
                                                                      collided=pygame.sprite.collide_mask):
                 player = Cube(200, player.rect.y)
+                to_remove = list(players)[0]
+                players.remove(to_remove)
+                all_sprites.remove(to_remove)
+                player.vy = 1
+
+            if player is not None and pygame.sprite.spritecollideany(player, ufo_portals,
+                                                                     collided=pygame.sprite.collide_mask):
+                player = Ufo(200, player.rect.y)
                 to_remove = list(players)[0]
                 players.remove(to_remove)
                 all_sprites.remove(to_remove)
@@ -358,7 +382,7 @@ def start_screen():
                     flag1 = False
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_UP and pygame.sprite.spritecollideany(player,
                                                                                                                 spheres,
-                                                                                                              collided=pygame.sprite.collide_mask):
+                                                                                                                collided=pygame.sprite.collide_mask):
                     player.is_jumping = False
                     player.jump()
                     flag1 = False
