@@ -197,7 +197,6 @@ class Ball(pygame.sprite.Sprite):
                 down = True
 
     def jump(self):
-        global down
         if not self.is_jumping:
             self.is_jumping = True
 
