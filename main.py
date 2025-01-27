@@ -162,6 +162,46 @@ class Ufo(pygame.sprite.Sprite):
         return None  # Если приземляться некуда
 
 
+class Ball(pygame.sprite.Sprite):
+    def __init__(self, pos_x, pos_y):
+        super().__init__(players, all_sprites)
+        self.image = pygame.transform.scale(load_image('Ball33.jpg'), (50, 50))
+        self.rect = self.image.get_rect()
+        self.vy = 0
+        self.rect.x = pos_x
+        self.rect.y = pos_y
+        self.is_jumping = False
+        self.mask = pygame.mask.from_surface(self.image)  # Маска для шарика
+        self.original_image = self.image
+        self.angle = 0
+
+    def update(self):
+        global game_over
+        global flag1
+        global down
+        # Вращение
+        self.angle = (self.angle + 3) % 360
+        self.image = pygame.transform.rotate(self.original_image, 180 - self.angle)
+        self.rect = self.image.get_rect(center=self.rect.center)
+        if self.is_jumping:
+            self.rect.y += self.vy
+            if self.rect.y <= 0:
+                down = False
+                self.is_jumping = False
+                self.vy = 0
+                self.rect.y = 0
+            elif self.rect.y >= HEIGHT - 50:
+                self.is_jumping = False
+                self.vy = 0
+                self.rect.y = HEIGHT - 50
+                down = True
+
+    def jump(self):
+        global down
+        if not self.is_jumping:
+            self.is_jumping = True
+
+
 class Backgrounds(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__(all_sprites)
@@ -198,6 +238,7 @@ class Sphere(pygame.sprite.Sprite):
 
 
 flag = False
+down = True
 
 
 def load_level(filename):
@@ -303,7 +344,7 @@ def start_screen():
                 terminate()
             if event.type == pygame.MOUSEBUTTONDOWN and not flag:
                 Backgrounds()
-                player = Cube(200, HEIGHT - 100)
+                player = Ball(200, HEIGHT - 100)
                 flag = True
                 generate_level(load_level('level1.txt'))
                 # начинаем игру
@@ -386,6 +427,12 @@ def start_screen():
                     player.is_jumping = False
                     player.jump()
                     flag1 = False
+            elif type(player) is Ball:
+                player.update()
+                if down:
+                    player.vy = -3
+                else:
+                    player.vy = 3
         all_sprites.draw(screen)
         clock.tick(FPS)
         pygame.display.flip()
