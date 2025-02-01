@@ -227,7 +227,6 @@ class Ball(pygame.sprite.Sprite):
             if self.rect.colliderect(platform.rect):
                 if self.vy >= 0 and self.rect.y < platform.rect.y and not down and not flag1:  # Если падает вниз и касается платформы
 
-
                     return platform  # Возвращаем платформу
                 elif self.vy <= 0 and self.rect.y > platform.rect.y and down and not flag1:  # Если падает вниз и касается платформы
 
@@ -252,6 +251,18 @@ class Trampoline(pygame.sprite.Sprite):
             50 * pos_x, 50 * pos_y + 30)
         self.vx = 5
         self.mask = pygame.mask.from_surface(self.image)
+
+    def update(self):
+        self.rect.x -= self.vx
+
+end_blocks = pygame.sprite.Group()
+class End(pygame.sprite.Sprite):
+    def __init__(self, pos_x, pos_y):
+        super().__init__(end_blocks, all_sprites)
+        self.image = pygame.transform.scale(load_image('EndBlock.png'), (50, 50))
+        self.rect = self.image.get_rect().move(
+            50 * pos_x, 50 * pos_y)
+        self.vx = 5
 
     def update(self):
         self.rect.x -= self.vx
@@ -309,6 +320,8 @@ class CubePortal(pygame.sprite.Sprite):
         self.vx = 5
         self.mask = pygame.mask.from_surface(self.image)
 
+
+
     def update(self):
         self.rect.x -= self.vx
 
@@ -324,6 +337,7 @@ class UfoPortal(pygame.sprite.Sprite):
 
     def update(self):
         self.rect.x -= self.vx
+
 
 class BallPortal(pygame.sprite.Sprite):
     def __init__(self, pos_x, pos_y):
@@ -355,8 +369,10 @@ def generate_level(level):
     x, y = None, None
     for y in range(len(level)):
         for x in range(len(level[y])):
-            if level[y][x] == '^':
-                Spike(x, y)
+            if level[y][x] == '^' or level[y][x] == 'v':
+                a = Spike(x, y)
+                if level[y][x] == 'v':
+                    a.image = pygame.transform.rotate(a.image, 180)
             elif level[y][x] == '-':
                 Platform(x, y)
             elif level[y][x] == '_':
@@ -369,6 +385,8 @@ def generate_level(level):
                 UfoPortal(x, y)
             elif level[y][x] == '2':
                 BallPortal(x, y)
+            elif level[y][x] == '3':
+                End(x, y)
     # вернем игрока, а также размер поля в клетках
     return x, y
 
@@ -382,7 +400,7 @@ class Button:
     def __init__(self, x, y, image):
         self.image = image
         self.rect = self.image.get_rect(topleft=(x, y))
-        self.pressed = False # Флаг, указывающий, нажата ли кнопка
+        self.pressed = False  # Флаг, указывающий, нажата ли кнопка
 
     def draw(self, screen):
         screen.blit(self.image, self.rect)
@@ -395,7 +413,7 @@ button3 = Button(15, 235, pygame.transform.scale(load_image("hard.png"), (380, 9
 button4 = Button(400, 235, pygame.transform.scale(load_image("harder.png"), (380, 95)))
 button5 = Button(15, 450, pygame.transform.scale(load_image("insane.png"), (380, 95)))
 button6 = Button(400, 450, pygame.transform.scale(load_image("demon.png"), (380, 95)))
-
+congratulations = False
 
 def start_screen():
     global flag
@@ -403,6 +421,7 @@ def start_screen():
     global game_over
     global down
     global menu
+    global congratulations
     player = None
     fon = pygame.transform.scale(load_image('maxresdefault.jpg'), (WIDTH, HEIGHT))
     screen.blit(fon, (0, 0))
@@ -453,9 +472,10 @@ def start_screen():
                 elif not menu:
                     menu = True
                 # начинаем игру
-                if game_over:
+                if game_over or congratulations:
                     flag = False
                     game_over = False
+                    congratulations = False
                     to_remove = list(players)[0]
                     players.remove(to_remove)
                     all_sprites.remove(to_remove)
@@ -475,7 +495,7 @@ def start_screen():
                 button4.draw(screen)
                 button5.draw(screen)
                 button6.draw(screen)
-            if not game_over and flag:
+            if not game_over and flag and not congratulations:
 
                 all_sprites.update()
                 if player is not None and pygame.sprite.spritecollideany(player, cube_portals,
@@ -523,12 +543,15 @@ def start_screen():
                         flag1 = False
                         player.vy = 0.2
 
-                    if flag1 and pygame.sprite.spritecollideany(player, trampolines, collided=pygame.sprite.collide_mask):
+                    if pygame.sprite.spritecollideany(player, trampolines,
+                                                                collided=pygame.sprite.collide_mask):
+
                         player.jump()
                         flag1 = False
-                    if event.type == pygame.KEYDOWN and event.key == pygame.K_UP and pygame.sprite.spritecollideany(player,
-                                                                                                                    spheres,
-                                                                                                                    collided=pygame.sprite.collide_mask):
+                    if event.type == pygame.KEYDOWN and event.key == pygame.K_UP and pygame.sprite.spritecollideany(
+                            player,
+                            spheres,
+                            collided=pygame.sprite.collide_mask):
                         player.is_jumping = False
                         player.jump()
                         flag1 = False
@@ -552,12 +575,14 @@ def start_screen():
                         flag1 = False
                         player.vy = 0.5
 
-                    if flag1 and pygame.sprite.spritecollideany(player, trampolines, collided=pygame.sprite.collide_mask):
+                    if flag1 and pygame.sprite.spritecollideany(player, trampolines,
+                                                                collided=pygame.sprite.collide_mask):
                         player.jump()
                         flag1 = False
-                    if event.type == pygame.KEYDOWN and event.key == pygame.K_UP and pygame.sprite.spritecollideany(player,
-                                                                                                                    spheres,
-                                                                                                                    collided=pygame.sprite.collide_mask):
+                    if event.type == pygame.KEYDOWN and event.key == pygame.K_UP and pygame.sprite.spritecollideany(
+                            player,
+                            spheres,
+                            collided=pygame.sprite.collide_mask):
                         player.is_jumping = False
                         player.jump()
                         flag1 = False
@@ -573,11 +598,16 @@ def start_screen():
                         game_over = True
                         # Столкновение!
                     for platform in platforms:
-                        if player.rect.colliderect(platform.rect) and abs(player.rect.top - platform.rect.top) < 20 and abs(player.rect.bottom - platform.rect.bottom) < 20:
+                        if player.rect.colliderect(platform.rect) and abs(
+                                player.rect.top - platform.rect.top) < 20 and abs(
+                                player.rect.bottom - platform.rect.bottom) < 20:
                             game_over = True
-
+                if pygame.sprite.spritecollideany(player, end_blocks):
+                    congratulations = True
             elif game_over:
                 screen.blit(load_image("GAMEOVER.png"), (120, 270))
+            elif congratulations:
+                screen.blit(load_image("completed.png"), (30, 270))
         pygame.display.flip()
         all_sprites.draw(screen)
         clock.tick(FPS)
@@ -589,9 +619,4 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             terminate()
-        if event.type == pygame.MOUSEBUTTONDOWN and game_over:
-            game_over = False
-            start_screen()
 pygame.quit()
-
-
