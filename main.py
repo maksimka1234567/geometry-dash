@@ -17,12 +17,13 @@ def load_image(name, colorkey=None):
             colorkey = image.get_at((0, 0))  # Берем цвет из верхнего левого пикселя
         image = image.convert()  # Важно! Вызывать convert() ПЕРЕД set_colorkey()
         image.set_colorkey(colorkey)
+
     else:
         image = image.convert_alpha()
     return image
 
 
-FPS = 120
+FPS = 100
 clock = pygame.time.Clock()
 spikes = pygame.sprite.Group()
 cube_portals = pygame.sprite.Group()
@@ -414,10 +415,11 @@ button4 = Button(400, 235, pygame.transform.scale(load_image("harder.png"), (380
 button5 = Button(15, 450, pygame.transform.scale(load_image("insane.png"), (380, 95)))
 button6 = Button(400, 450, pygame.transform.scale(load_image("demon.png"), (380, 95)))
 congratulations = False
-
+flag2 = False
 def start_screen():
     global flag
     global flag1
+    global flag2
     global game_over
     global down
     global menu
@@ -435,40 +437,62 @@ def start_screen():
                     if 15 <= event.pos[0] <= 395 and 15 <= event.pos[1] <= 110:
                         Backgrounds()
                         flag = True
-                        player = Ball(200, HEIGHT - 95)
+                        player = Cube(200, HEIGHT - 50)
                         generate_level(load_level('level1.txt'))
                         flag1 = True
+                        pygame.mixer.music.load('easy.mp3')
+                        pygame.mixer.music.play()
+                        flag2 = False
                     elif 400 <= event.pos[0] <= 780 and 15 <= event.pos[1] <= 110:
                         Backgrounds()
                         flag = True
-                        player = Cube(200, HEIGHT - 95)
+                        player = Cube(200, HEIGHT - 50)
                         generate_level(load_level('level2.txt'))
                         flag1 = True
+                        pygame.mixer.music.load('normal.mp3')
+                        pygame.mixer.music.play()
+                        flag2 = False
                     elif 15 <= event.pos[0] <= 395 and 235 <= event.pos[1] <= 330:
                         Backgrounds()
                         flag = True
-                        player = Cube(200, HEIGHT - 95)
+                        player = Cube(200, HEIGHT - 50)
                         generate_level(load_level('level3.txt'))
                         flag1 = True
+                        player.is_jumping = False
+                        pygame.mixer.music.load('hard.mp3')
+                        pygame.mixer.music.play()
+                        flag2 = False
                     elif 400 <= event.pos[0] <= 780 and 235 <= event.pos[1] <= 330:
                         Backgrounds()
                         flag = True
-                        player = Cube(200, HEIGHT - 95)
+                        player = Cube(200, HEIGHT - 50)
                         generate_level(load_level('level4.txt'))
                         flag1 = True
+                        pygame.mixer.music.load('harder.mp3')
+                        pygame.mixer.music.play()
+                        flag2 = False
                     elif 15 <= event.pos[0] <= 395 and 450 <= event.pos[1] <= 545:
                         Backgrounds()
                         flag = True
-                        player = Cube(200, HEIGHT - 95)
+                        player = Ball(200, HEIGHT - 50)
+                        player.is_jumping = False
+                        player.vy = 0
                         generate_level(load_level('level5.txt'))
-                        flag1 = True
+                        flag1 = False
+                        down = True
+                        pygame.mixer.music.load('insane.mp3')
+                        pygame.mixer.music.play()
+                        flag2 = False
                     elif 400 <= event.pos[0] <= 780 and 450 <= event.pos[1] <= 545:
                         Backgrounds()
                         flag = True
-                        player = Cube(200, HEIGHT - 95)
+                        player = Cube(200, HEIGHT - 50)
                         generate_level(load_level('level6.txt'))
-                        flag1 = True
-
+                        flag1 = False
+                        player.is_jumping = False
+                        pygame.mixer.music.load('demon.mp3')
+                        pygame.mixer.music.play()
+                        flag2 = False
                 elif not menu:
                     menu = True
                 # начинаем игру
@@ -495,6 +519,7 @@ def start_screen():
                 button4.draw(screen)
                 button5.draw(screen)
                 button6.draw(screen)
+
             if not game_over and flag and not congratulations:
 
                 all_sprites.update()
@@ -505,6 +530,7 @@ def start_screen():
                     players.remove(to_remove)
                     all_sprites.remove(to_remove)
                     player.vy = 1
+                    player.is_jumping = True
 
                 if player is not None and pygame.sprite.spritecollideany(player, ufo_portals,
                                                                          collided=pygame.sprite.collide_mask):
@@ -575,17 +601,6 @@ def start_screen():
                         flag1 = False
                         player.vy = 0.5
 
-                    if flag1 and pygame.sprite.spritecollideany(player, trampolines,
-                                                                collided=pygame.sprite.collide_mask):
-                        player.jump()
-                        flag1 = False
-                    if event.type == pygame.KEYDOWN and event.key == pygame.K_UP and pygame.sprite.spritecollideany(
-                            player,
-                            spheres,
-                            collided=pygame.sprite.collide_mask):
-                        player.is_jumping = False
-                        player.jump()
-                        flag1 = False
                 elif type(player) is Ball:
                     player.update()
                     if not pygame.sprite.spritecollideany(player, platforms) and flag1 and player.vy == 0:
@@ -605,8 +620,16 @@ def start_screen():
                 if pygame.sprite.spritecollideany(player, end_blocks):
                     congratulations = True
             elif game_over:
+                pygame.mixer.music.stop()
+                if not flag2:
+                    pygame.mixer.Sound('death.ogg').play()
+                    flag2 = True
                 screen.blit(load_image("GAMEOVER.png"), (120, 270))
             elif congratulations:
+                pygame.mixer.music.stop()
+                if not flag2:
+                    pygame.mixer.Sound('end.ogg').play()
+                    flag2 = True
                 screen.blit(load_image("completed.png"), (30, 270))
         pygame.display.flip()
         all_sprites.draw(screen)
